@@ -14,8 +14,10 @@ __vad.js__ is a small Javascript library for voice activity detection.
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
 </head>
 <body>
+  <button onclick="startrec()">start</button>
 <script type="text/javascript" src="lib/vad.js"></script>
 <script type="text/javascript">
+function startrec() {
   // Create AudioContext
   window.AudioContext = window.AudioContext || window.webkitAudioContext;
   var audioContext = new AudioContext();
@@ -36,13 +38,32 @@ __vad.js__ is a small Javascript library for voice activity detection.
     var vad = new VAD(options);
   }
 
-  // Ask for audio device
-  navigator.getUserMedia = navigator.getUserMedia || 
-                           navigator.mozGetUserMedia || 
-                           navigator.webkitGetUserMedia;
-  navigator.getUserMedia({audio: true}, startUserMedia, function(e) {
-          console.log("No live audio input in this browser: " + e);
-  });
+
+  navigator.mediaDevices = navigator.mediaDevices || ((navigator.mozGetUserMedia || navigator.webkitGetUserMedia) ? {
+   getUserMedia: function(c) {
+     return new Promise(function(y, n) {
+       (navigator.mozGetUserMedia ||
+        navigator.webkitGetUserMedia).call(navigator, c, y, n);
+     });
+   }
+} : null);
+
+if (!navigator.mediaDevices) {
+  console.log("getUserMedia() not supported.");
+  return;
+}
+
+// Prefer camera resolution nearest to 1280x720.
+
+var constraints = { audio: true, video: false };
+navigator.mediaDevices.getUserMedia(constraints)
+.then(function(stream) {
+  startUserMedia(stream);
+})
+.catch(function(err) {
+  console.log(err.name + ": " + err.message);
+});
+}
 </script>
 </body>
 </html>
